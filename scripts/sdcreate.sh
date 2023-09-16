@@ -45,7 +45,7 @@ if [[ ! -z "${mount}" ]]; then
   exit 4
 fi
 
-echo "WARNING: ALL EXISTING DATA OF THE TARGET DEVICE WILL BE DESTROYED!"
+echo "WARNING: ALL EXISTING DATA ON THE TARGET DEVICE ${DEST} WILL BE DESTROYED!"
 echo "Continue? (1=Yes, 2=No)"
 select yn in "Y" "N"; do
     case $yn in
