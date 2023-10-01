@@ -158,7 +158,7 @@ fi
 # 2: Disk-ROM
 opts=(
   1 "MegaSDHC FAT16X Single SD-slot  (default)" \
-  2 "MegaSDHC FAT16X Double SD-slot" \
+  2 "MegaSDHC FAT16X Double SD-slot  (drive A: and B:)" \
 )
 if [[ $OPT1 != 1 ]]; then
   opts+=(3)
