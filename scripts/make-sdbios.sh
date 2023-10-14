@@ -162,6 +162,11 @@ opts=(
 )
 if [[ $OPT1 != 1 ]]; then
   opts+=(3)
+  # https://github.com/Konamiman/Nextor/releases/tag/v2.1.1
+  # Sep 1, 2022
+  # Nextor-2.1.1.OCM.ROM
+  # sha1 15295a5d4837f14f8021c9aa45f18940dc2a77d5
+  # Comparable to MegaFlashROM SCC+ SD; DiskROM related code removed
   opts+=("Nextor Kernel v2.1.1 Single SD-slot")
 fi
 if [[ $OPT1 == 5 ]]; then
