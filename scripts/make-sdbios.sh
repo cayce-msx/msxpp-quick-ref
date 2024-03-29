@@ -3,7 +3,7 @@
 set -e
 
 if [[ $# == 0 ]]; then
-  echo "Create SDBIOS.DAT for use with OCM-PLD."
+  echo "Create SD-BIOS (OCM-BIOS.DAT) for use with OCM-PLD."
   echo "Based on make-sdb.cmd by KdL."
   echo "Named 'make-sdbios.sh' because, well, make-sdb.sh could make Linux folks uneasy about their internal drive ;)"
   echo "Menu selections are less feature rich. Cancels exits."
@@ -109,6 +109,7 @@ shift && case $1 in
   9   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
   'A' ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
   'B' ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
+  'C' ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
   *) ;;
 esac
 ## 5: Option-ROM / Wi-Fi
@@ -157,17 +158,17 @@ fi
 
 # 2: Disk-ROM
 opts=(
-  1 "MegaSDHC FAT16X Single SD-slot  (default)" \
-  2 "MegaSDHC FAT16X Double SD-slot  (drive A: and B:)" \
+  1 "MegaSDHC FAT16X Single drive  (default)" \
+  2 "MegaSDHC FAT16X Double drive  (drive A: and B:)" \
 )
 if [[ $OPT1 != 1 ]]; then
   opts+=(3)
-  # https://github.com/Konamiman/Nextor/releases/tag/v2.1.1
-  # Sep 1, 2022
-  # Nextor-2.1.1.OCM.ROM
-  # sha1 15295a5d4837f14f8021c9aa45f18940dc2a77d5
+  # https://github.com/Konamiman/Nextor/releases/tag/v2.1.2
+  # Dec 1, 2023
+  # Nextor-2.1.2.OCM.ROM
+  # sha1 15f7d295d574124dec7073b7d54bff76aeb243d5
   # Comparable to MegaFlashROM SCC+ SD; DiskROM related code removed
-  opts+=("Nextor Kernel v2.1.1 Single SD-slot")
+  opts+=("Nextor Kernel v2.1.2")
 fi
 if [[ $OPT1 == 5 ]]; then
   # MSX1 only supports Nextor; not MegaSDHC
@@ -329,12 +330,13 @@ case $OPT1 in
       9 "1chipMSX-Kai logo by HRA!" \
       A "SX-2 logo by 8bits4ever" \
       B "OCM generic unbound logo" \
-      C "extra: 2000" \
-      D "extra: 8bits4ever" \
-      E "extra: MiSXer" \
-      F "extra: MSX3+" \
-      G "extra: MSX3" \
-      H "extra: SX-1 v1" \
+      C "u2-SX logo by Denjhang" \
+      D "extra: 2000" \
+      E "extra: 8bits4ever" \
+      F "extra: MiSXer" \
+      G "extra: MSX3+" \
+      H "extra: MSX3" \
+      I "extra: SX-1 v1" \
     )
     if [[ -z "$OPT4" ]]; then
       OPT4=$(dialog \
@@ -358,12 +360,13 @@ case $OPT1 in
       9) KANJI="${ROMDIR}/knocmkai.rom";;
       A) KANJI="${ROMDIR}/knsx-2v2.rom";;
       B) KANJI="${ROMDIR}/knocmgun.rom";;
-      C) KANJI="${ROMDIR}/extra/kn2000un.rom";;
-      D) KANJI="${ROMDIR}/extra/kn8bi4ev.rom";;
-      E) KANJI="${ROMDIR}/extra/knmisxer.rom";;
-      F) KANJI="${ROMDIR}/extra/knmsx3pl.rom";;
-      G) KANJI="${ROMDIR}/extra/knmsx3un.rom";;
-      H) KANJI="${ROMDIR}/extra/knsx-1v1.rom";;
+      C) KANJI="${ROMDIR}/knu2sx11.rom";;
+      D) KANJI="${ROMDIR}/extra/kn2000un.rom";;
+      E) KANJI="${ROMDIR}/extra/kn8bi4ev.rom";;
+      F) KANJI="${ROMDIR}/extra/knmisxer.rom";;
+      G) KANJI="${ROMDIR}/extra/knmsx3pl.rom";;
+      H) KANJI="${ROMDIR}/extra/knmsx3un.rom";;
+      I) KANJI="${ROMDIR}/extra/knsx-1v1.rom";;
       *);;
     esac;;
 esac
