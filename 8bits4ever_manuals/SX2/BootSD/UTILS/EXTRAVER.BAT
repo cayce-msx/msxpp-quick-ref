@@ -1,0 +1,11 @@
+type a:\utils\cpuspeed.com
+type a:\utils\extclock.com
+type a:\utils\firminfo.com
+type a:\utils\getreset.com
+type a:\utils\keyboard.com
+type a:\utils\pldflash.com
+type a:\utils\setaudio.com
+type a:\utils\setsmart.com
+type a:\utils\slotmode.com
+type a:\utils\vdpspeed.com
+type a:\utils\vgaratio.com
