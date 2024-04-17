@@ -4,7 +4,7 @@ set -e
 
 if [[ $# == 0 ]]; then
   echo "Create SD-BIOS (OCM-BIOS.DAT) for use with OCM-PLD."
-  echo "Based on make-sdb.cmd by KdL."
+  echo "Based on make-sdb.cmd for OCM-SDBIOS v3.7 by KdL (2024.01.13)."
   echo "Named 'make-sdbios.sh' because, well, make-sdb.sh could make Linux folks uneasy about their internal drive ;)"
   echo "Menu selections are less feature rich. Cancels exits."
   echo
@@ -509,7 +509,7 @@ echo "Creating output file $OUTPUT"
 
 # Chaining of ROMs
 case $OPT1 in
-  1) # older firmware - different order, no option ROM and no JIS2
+  1) # older firmware - different order, no option ROM and no JIS2 (384KiB SDBIOS)
     cat "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" > "${TMPDIR}/BLANK128.TMP"
     cat "${DISK[@]}" "${MAIN}" "${SUB}" "${MUSIC}" "${JIS1}" "${FREE16}" "${KANJI}" "${FREE16}" "${FREE16}" "${EXTRA}" "${FREE16}" "${FREE16}" "${TMPDIR}/BLANK128.TMP" > "${OUTPUT}"
     ;;
