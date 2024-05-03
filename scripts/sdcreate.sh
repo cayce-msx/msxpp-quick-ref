@@ -9,20 +9,17 @@ if [[ $# == 0 ]]; then
   echo "You will need sudo rights."
   echo "Use this program at your own risk - no warranties."
   echo
-  echo "Usage: $0 /dev/<device> <path to extracted OCM-SDBIOS Pack> [label (default: MSXFAT16)]"
+  echo "Usage: $0 {/dev/<device>|<file> <size (MiB)} <path to extracted OCM-SDBIOS Pack> [label (default: MSXFAT16)]"
   exit 1
 fi
 
-# To do this on an image file, using loopback:
-#
-#  dd if=/dev/zero bs=1M count=<size> of=<file>.img
-#  ..do (s)fdisk manually
-#  sudo partx -av <file>.img
-#  .. mkfs.fat as below ..
-#  sudo partx -dv /dev/loopXX
-
 # Input parameters
 DEST="$1"
+if [[ -f "${DEST}" || ! -e "${DEST}" ]]; then
+  is_file=true
+  size=$2
+  shift
+fi
 SDBIOS="$2/make/sdcreate"
 LABEL="${3:-msxfat16}"
 LABEL="${LABEL:0:11}"
@@ -39,10 +36,12 @@ if [[ ! -f "${SDBIOS}/os/COMMAND2.COM" ]]; then
 fi
 
 # Start of process
-mount=$(lsblk -no MOUNTPOINTS "${DEST}" | xargs)
-if [[ ! -z "${mount}" ]]; then
-  echo "Destination $DEST is mounted as ${mount}. Unmount it first."
-  exit 4
+if [[ -z "$is_file" ]]; then
+  mount=$(lsblk -no MOUNTPOINTS "${DEST}" | xargs)
+  if [[ ! -z "${mount}" ]]; then
+    echo "Destination $DEST is mounted as ${mount}. Unmount it first."
+    exit 4
+  fi
 fi
 
 echo "WARNING: ALL EXISTING DATA ON THE TARGET DEVICE ${DEST} WILL BE DESTROYED!"
@@ -54,15 +53,21 @@ select yn in "Y" "N"; do
     esac
 done
 
-# partition size in 512B-sectors
-destsize=$(sudo blockdev --getsz "${DEST}")
-destsize=$(($destsize - 1))
-if [[ $destsize > 8386560 ]]; then
+if [[ -z "$is_file" ]]; then
+  # partition size in 512B-sectors
+  destsize=$(sudo blockdev --getsz "${DEST}")
+else
+  echo "creating new zero'ed disk image of ${size}MiB"
+  dd if=/dev/zero bs=1M count=$size of="${DEST}"
+  destsize=$((size*2048))
+fi
+destsize=$((destsize-1))
+if ((destsize>8386560)); then
   echo "Your micro-SD card is larger than 4GiB. Only creating 1 primary partition of 4095MiB. Create the other partitions manually."
   destsize=8386560
 fi
 
-destsize_mib=$(($destsize / 2048))
+destsize_mib=$((destsize/2048))
 
 # type e=W95 FAT16, type 6=FAT16, 1=FAT12
 ## a 'p' is added as partition prefix when the device name ends in a digit
@@ -89,7 +94,11 @@ sudo sfdisk "${DEST}" < "${scriptfile}"
 # -R 2 \ #NUMBER-OF-RESERVED-SECTORS 0x00E(2) = 0x002 / 0x004 (varies)
 # -f 2 \ #NUMBER-OF-FATS #FATS 0x010(1) = 0x02 (default)
 # -r 512 \ #ROOT-DIR-ENTRIES 0x011(2) = 0x200 (default)
-sudo mkfs.fat -F 16 -n "${LABEL}" "${partition}"
+if [[ -z "$is_file" ]]; then
+  sudo mkfs.fat -F 16 -n "${LABEL}" "${partition}"
+else
+  sudo mkfs.fat --offset 1 -F 16 -n "${LABEL}" "${DEST}"
+fi
 
 echo "Stopping here; Linux fat fs seems to skip cluster 2, which breaks SD-BIOS loading on OCM-PLD firmware v3.9."
 echo "Please copy OCM-BIOS.DAT using Windows..."
@@ -98,7 +107,11 @@ exit
 the_uid=$(whoami)
 the_gid=$(id -gn ${the_uid})
 mountpoint=$(mktemp -d)
-sudo mount -o uid="${the_uid}",gid="${the_gid}" "${partition}" "${mountpoint}"
+if [[ -z "$is_file" ]]; then
+  sudo mount -t vfat -o uid="${the_uid}",gid="${the_gid}",shortname=winnt "${partition}" "${mountpoint}"
+else
+  sudo mount -t vfat -o uid="${the_uid}",gid="${the_gid}",shortname=winnt,loop,offset=512 "${DEST}" "${mountpoint}"
+fi
 
 echo
 echo "Copying files"

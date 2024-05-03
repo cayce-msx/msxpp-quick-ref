@@ -8,7 +8,7 @@ if [[ $# == 0 ]]; then
   echo "Named 'make-sdbios.sh' because, well, make-sdb.sh could make Linux folks uneasy about their internal drive ;)"
   echo "Menu selections are less feature rich. Cancels exits."
   echo
-  echo "Usage: $0 [args] <path to extracted OCM-SDBIOS Pack> [opt1..6]"
+  echo "Usage: $0 [args] <path to extracted OCM-SDBIOS Pack> [opt1..6] [<custom mainrom file> <custom subrom file>]"
   echo "  where each 'opt' is either a choice number or a dot (.) for the default choice"
   echo "  (make-sdb.cmd uses '*' for defaults, but that's not very convenient in *nix shell)"
   echo
@@ -35,6 +35,8 @@ while [[ $1 =~ ^\- ]] do
   elif [[ $1 == "-s" ]]; then
     alt_output=$2
     shift
+  elif [[ $1 == "-q" ]]; then
+    quiet=true
   else
     echo "option $1 not recognized"
     exit 17
@@ -74,7 +76,7 @@ shift && case $1 in
   4   ) OPT1=$1;;
   5   ) OPT1=$1;;
   6   ) OPT1=$1;;
-  #7   ) OPT1=$1;; - not via cmdline
+  7   ) OPT1=$1;;
   8   ) OPT1=$1;;
   *) ;;
 esac
@@ -83,7 +85,7 @@ shift && case $1 in
   '.' ) OPT2=$DEFOPT2;;
   1   ) OPT2=$1;;
   2   ) OPT2=$1;;
-  3   ) OPT2=$1; [[ $OPT1==1 ]] && OPT2=;;
+  3   ) OPT2=$1; [[ $OPT1 == 1 ]] && OPT2=;;
   *) ;;
 esac
 ## 3: Main-ROM / keyboard mapping
@@ -91,34 +93,40 @@ shift && case $1 in
   '.' ) OPT3=$DEFOPT3;;
   1   ) OPT3=$1;;
   2   ) OPT3=$1;;
-  3   ) OPT3=$1; [[ $OPT1==3 ]] && OPT3=;;
+  3   ) OPT3=$1; [[ $OPT1 == 3 ]] && OPT3=;;
   *) ;;
 esac
 ## 4: Kanji-ROM / logo
 shift && case $1 in
   '.' ) OPT4=$DEFOPT4;;
-  0   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  1   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
+  0   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  1   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   2   ) OPT4=$1;;
-  3   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  4   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  5   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  6   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  7   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  8   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  9   ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  'A' ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  'B' ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
-  'C' ) OPT4=$1; [[ $OPT1==3 ]] && OPT4=;;
+  3   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  4   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  5   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  6   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  7   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  8   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  9   ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'A' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'B' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'C' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'D' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'E' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'F' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'G' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'H' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'I' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   *) ;;
 esac
 ## 5: Option-ROM / Wi-Fi
 shift && case $1 in
   '.' ) OPT5=$DEFOPT5;;
-  0   ) OPT5=$1; [[ $OPT1==1 ]] && OPT5=;;
+  0   ) OPT5=$1; [[ $OPT1 == 1 ]] && OPT5=;;
   1   ) OPT5=$1;;
-  2   ) OPT5=$1; [[ $OPT1==1 || $OPT1==2 ]] && OPT5=;;
-  3   ) OPT5=$1; [[ $OPT1==1 || $OPT1==2 ]] && OPT5=;;
+  2   ) OPT5=$1; [[ $OPT1 == 1 ]] && OPT5=;;
+  3   ) OPT5=$1; [[ $OPT1 == 1 ]] && OPT5=;;
   *) ;;
 esac
 ## 6: Extra-ROM / Kun-BASIC
@@ -269,8 +277,12 @@ case $OPT1 in
       *);;
     esac;;
   7)
-    echo -n "full path to Main-ROM : "
-    read MAIN
+    shift
+    MAIN="$1"
+    if [[ -z "${MAIN}" ]]; then
+      echo -n "full path to Main-ROM : "
+      read MAIN
+    fi
     if [[ ! -f $MAIN ]] then
       echo "File '$MAIN' does not exist"
       exit 13
@@ -292,8 +304,12 @@ case $OPT1 in
   5) SUB="${ROMDIR}/x2extrtc.rom";;
   6) SUB="${ROMDIR}/x2extrtc.rom";;
   7)
-    echo -n "full path to Sub-ROM : "
-    read SUB
+    shift
+    SUB="$1"
+    if [[ -z "${SUB}" ]]; then
+      echo -n "full path to Sub-ROM : "
+      read SUB
+    fi
     if [[ ! -f $SUB ]] then
       echo "File '$SUB' does not exist"
       exit 14
@@ -451,8 +467,10 @@ case $OPT6 in
 esac
 
 # print choices
-echo
-echo "selected options - 1: $OPT1, 2: $OPT2, 3: $OPT3, 4: $OPT4, 5: $OPT5, 6: $OPT6"
+if [[ -z $quiet ]]; then
+  echo
+  echo "selected options - 1: $OPT1, 2: $OPT2, 3: $OPT3, 4: $OPT4, 5: $OPT5, 6: $OPT6"
+fi
 
 # self-check
 if [[ $OPT1 != 4 ]]; then
@@ -505,7 +523,9 @@ if [[ -f "${OUTPUT}" && $overwrite != true ]]; then
   exit 12
 fi
 
-echo "Creating output file $OUTPUT"
+if [[ -z $quiet ]]; then
+  echo "Creating output file $OUTPUT"
+fi
 
 # Chaining of ROMs
 case $OPT1 in
@@ -522,18 +542,20 @@ case $OPT1 in
     cat "${DISK[@]}" "${MAIN}" "${EXTRA}" "${MUSIC}" "${SUB}" "${KANJI}" "${OPTION}" "${JIS1}" "${JIS2}" > "${OUTPUT}";;
 esac
 
-echo "Done"
-echo
+if [[ -z $quiet ]]; then
+  echo "Done"
+  echo
 
-# Help Message
-echo "---| MSX-BIOS Configuration (OCM-PLD v3.4 or later) |------------------------"
-echo "3-2 (4000h)  128kB  MEGASDHC.ROM + NULL64KB.ROM / NEXTOR  .ROM   blocks 01-08"
-echo "0-0 (0000h)   32kB  MSX2P   .ROM / MSXTR   .ROM                  blocks 09-10"
-echo "3-3 (4000h)   16kB  XBASIC2 .ROM / XBASIC21.ROM                  block  11"
-echo "0-2 (4000h)   16kB  MSX2PMUS.ROM / MSXTRMUS.ROM                  block  12"
-echo "3-1 (0000h)   16kB  MSX2PEXT.ROM / MSXTREXT.ROM                  block  13"
-echo "3-1 (4000h)   32kB  MSXKANJI.ROM                                 blocks 14-15"
-echo "0-3 (4000h)   16kB  FREE16KB.ROM / MSXTROPT.ROM / ESP8266 .ROM   block  16"
-echo "I/O          128kB  JIS1    .ROM                                 blocks 17-24"
-echo "I/O          128kB  JIS2    .ROM                        (512kB)  blocks 25-32"
-echo "-----------------------------------------------------------------------------"
+  # Help Message
+  echo "---| MSX-BIOS Configuration (OCM-PLD v3.4 or later) |------------------------"
+  echo "3-2 (4000h)  128kB  MEGASDHC.ROM + NULL64KB.ROM / NEXTOR  .ROM   blocks 01-08"
+  echo "0-0 (0000h)   32kB  MSX2P   .ROM / MSXTR   .ROM                  blocks 09-10"
+  echo "3-3 (4000h)   16kB  XBASIC2 .ROM / XBASIC21.ROM                  block  11"
+  echo "0-2 (4000h)   16kB  MSX2PMUS.ROM / MSXTRMUS.ROM                  block  12"
+  echo "3-1 (0000h)   16kB  MSX2PEXT.ROM / MSXTREXT.ROM                  block  13"
+  echo "3-1 (4000h)   32kB  MSXKANJI.ROM                                 blocks 14-15"
+  echo "0-3 (4000h)   16kB  FREE16KB.ROM / MSXTROPT.ROM / ESP8266 .ROM   block  16"
+  echo "I/O          128kB  JIS1    .ROM                                 blocks 17-24"
+  echo "I/O          128kB  JIS2    .ROM                        (512kB)  blocks 25-32"
+  echo "-----------------------------------------------------------------------------"
+fi
