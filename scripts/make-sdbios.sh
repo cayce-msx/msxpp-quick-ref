@@ -16,6 +16,7 @@ if [[ $# == 0 ]]; then
   echo " -n\toutput as OCM-BIOSiiiiii.DAT which each 'i' a choice value"
   echo " -s <digit>\toutput as ALT-BIOS.DAi"
   echo " -y\toverwrite existing file without asking"
+  echo " -e <path>\tpath to extra ROMs"
   exit 1
 fi
 
@@ -32,6 +33,9 @@ while [[ $1 =~ ^\- ]] do
     number_output=true
   elif [[ $1 == "-y" ]]; then
     overwrite=true
+  elif [[ $1 == "-e" ]]; then
+    extra_roms=$2
+    shift
   elif [[ $1 == "-s" ]]; then
     alt_output=$2
     shift
@@ -94,6 +98,7 @@ shift && case $1 in
   1   ) OPT3=$1;;
   2   ) OPT3=$1;;
   3   ) OPT3=$1; [[ $OPT1 == 3 ]] && OPT3=;;
+  4   ) OPT3=$1;;
   *) ;;
 esac
 ## 4: Kanji-ROM / logo
@@ -118,6 +123,7 @@ shift && case $1 in
   'G' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   'H' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   'I' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'J' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   *) ;;
 esac
 ## 5: Option-ROM / Wi-Fi
@@ -215,6 +221,7 @@ case $OPT1 in
       1 "MSX2+ FS-A1WSX Fn-mod Yen" \
       2 "MSX2+ FS-A1WSX Fn-mod Backslash  (default)" \
       3 "MSX2+ FS-A1WSX Fn-mod Western layout" \
+      4 "MSX2+ Philips NMS8250/80 (RepairBas)" \
     );;
   3)
     opts=(
@@ -254,6 +261,7 @@ case $OPT1 in
       1) MAIN="${ROMDIR}/a1wsxyen.rom";;
       2) MAIN="${ROMDIR}/a1wsxbsl.rom";;
       3) MAIN="${ROMDIR}/a1wsxwst.rom";;
+      4) MAIN="${extra_roms}/Philips_MSX2+_NMS8250_8280_ROM_A-27C256.ROM";;
       *);;
     esac;;
   3)
@@ -296,27 +304,40 @@ case $OPT1 in
 esac
 
 # Sub-ROM
-case $OPT1 in
-  1) SUB="${ROMDIR}/2pextr01.rom";;
-  3) SUB="${ROMDIR}/trextrtc.rom";;
-  # could leave this empty - sdbios-n34/msx1/n34msx1.bsl contains x2extrtc
-  #5) SUB="${ROMDIR}/free16kb.rom";;
-  5) SUB="${ROMDIR}/x2extrtc.rom";;
-  6) SUB="${ROMDIR}/x2extrtc.rom";;
-  7)
-    shift
-    SUB="$1"
-    if [[ -z "${SUB}" ]]; then
-      echo -n "full path to Sub-ROM : "
-      read SUB
-    fi
-    if [[ ! -f $SUB ]] then
-      echo "File '$SUB' does not exist"
-      exit 14
-    fi;;
-  8) SUB="${CBIOS_PATH}/cbios_sub.rom";;
-  *) SUB="${ROMDIR}/2pextrtc.rom";;
-esac
+if [[ $OPT3 == 4 ]] then
+  # must split into 2 parts
+  SUB_PLUS_KANJI="${extra_roms}/Philips_MSX2+_NMS8250_8280_ROM_B-27C512.ROM"
+  if [[ ! -f "${SUB_PLUS_KANJI}" ]]; then
+    echo "please specify -e <path to RepairBas ROMs>"
+    exit 19
+  fi
+  SUB="$(mktemp)"
+  dd if="${SUB_PLUS_KANJI}" bs=16k count=1 of="${SUB}" status=none
+  KANJI_BAS="$(mktemp)"
+  dd if="${SUB_PLUS_KANJI}" bs=16k skip=1 count=2 of="${KANJI_BAS}" status=none
+else
+  case $OPT1 in
+    1) SUB="${ROMDIR}/2pextr01.rom";;
+    3) SUB="${ROMDIR}/trextrtc.rom";;
+    # could leave this empty - sdbios-n34/msx1/n34msx1.bsl contains x2extrtc
+    #5) SUB="${ROMDIR}/free16kb.rom";;
+    5) SUB="${ROMDIR}/x2extrtc.rom";;
+    6) SUB="${ROMDIR}/x2extrtc.rom";;
+    7)
+      shift
+      SUB="$1"
+      if [[ -z "${SUB}" ]]; then
+        echo -n "full path to Sub-ROM : "
+        read SUB
+      fi
+      if [[ ! -f $SUB ]] then
+        echo "File '$SUB' does not exist"
+        exit 14
+      fi;;
+    8) SUB="${CBIOS_PATH}/cbios_sub.rom";;
+    *) SUB="${ROMDIR}/2pextrtc.rom";;
+  esac
+fi
 
 # MSX-Music
 case $OPT1 in
@@ -353,6 +374,7 @@ case $OPT1 in
       G "extra: MSX3+" \
       H "extra: MSX3" \
       I "extra: SX-1 v1" \
+      J "MSX2+ Philips NMS8250/80 (RepairBas)" \
     )
     if [[ -z "$OPT4" ]]; then
       OPT4=$(dialog \
@@ -383,6 +405,7 @@ case $OPT1 in
       G) KANJI="${ROMDIR}/extra/knmsx3pl.rom";;
       H) KANJI="${ROMDIR}/extra/knmsx3un.rom";;
       I) KANJI="${ROMDIR}/extra/knsx-1v1.rom";;
+      J) KANJI="${KANJI_BAS}";;
       *);;
     esac;;
 esac
@@ -435,7 +458,7 @@ case $OPT1 in
      esac;;
   *)
     echo "unhandled situation"
-    exit 14;;
+    exit 18;;
 esac
 
 # JIS1-ROM
