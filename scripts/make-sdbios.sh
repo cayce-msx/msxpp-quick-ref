@@ -16,7 +16,7 @@ if [[ $# == 0 ]]; then
   echo " -n\toutput as OCM-BIOSiiiiii.DAT which each 'i' a choice value"
   echo " -s <digit>\toutput as ALT-BIOS.DAi"
   echo " -y\toverwrite existing file without asking"
-  echo " -e <path>\tpath to extra ROMs"
+  echo " -e <path>\tpath to extra ROMs (FRS or Repair-Bas)"
   exit 1
 fi
 
@@ -99,6 +99,7 @@ shift && case $1 in
   2   ) OPT3=$1;;
   3   ) OPT3=$1; [[ $OPT1 == 3 ]] && OPT3=;;
   4   ) OPT3=$1;;
+  5   ) OPT3=$1;;
   *) ;;
 esac
 ## 4: Kanji-ROM / logo
@@ -239,6 +240,8 @@ case $OPT1 in
       1 "MSX2 Yen" \
       2 "MSX2 Backslash  (default)" \
       3 "MSX2 Western layout" \
+      4 "MSX2 FRS-v2.2 EU" \
+      5 "MSX2 FRS-v2.2 JP" \
     );;
   7|8);; # no choice
   *)
@@ -282,6 +285,8 @@ case $OPT1 in
       1) MAIN="${ROMDIR}/msx2-yen.rom";;
       2) MAIN="${ROMDIR}/msx2-bsl.rom";;
       3) MAIN="${ROMDIR}/msx2-wst.rom";;
+      4) MAIN="${extra_roms}/MSX2EU_mainbios-basic.rom";;
+      5) MAIN="${extra_roms}/MSX2JP_mainbios-basic.rom";;
       *);;
     esac;;
   7)
@@ -304,7 +309,7 @@ case $OPT1 in
 esac
 
 # Sub-ROM
-if [[ $OPT3 == 4 ]] then
+if [[ ( $OPT1 == 1 || $OPT1 == 2 || $OPT1 == 4) && $OPT3 == 4 ]] then
   # must split into 2 parts
   SUB_PLUS_KANJI="${extra_roms}/Philips_MSX2+_NMS8250_8280_ROM_B-27C512.ROM"
   if [[ ! -f "${SUB_PLUS_KANJI}" ]]; then
@@ -319,10 +324,14 @@ else
   case $OPT1 in
     1) SUB="${ROMDIR}/2pextr01.rom";;
     3) SUB="${ROMDIR}/trextrtc.rom";;
-    # could leave this empty - sdbios-n34/msx1/n34msx1.bsl contains x2extrtc
+    # could leave this empty; not used in MSX1 - but sdbios-n34/msx1/n34msx1.bsl contains x2extrtc, let's stay consistent
     #5) SUB="${ROMDIR}/free16kb.rom";;
     5) SUB="${ROMDIR}/x2extrtc.rom";;
-    6) SUB="${ROMDIR}/x2extrtc.rom";;
+    6) case $OPT3 in
+         4) SUB="${extra_roms}/MSX2EU_subROM.rom";;
+         5) SUB="${extra_roms}/MSX2JP_subROM.rom";;
+         *) SUB="${ROMDIR}/x2extrtc.rom";;
+       esac;;
     7)
       shift
       SUB="$1"
