@@ -28,7 +28,7 @@ FIRM4="512kB dummy blank file to run the EPBIOS"
 ESPVER="2022.08.13"
 
 # Parameters
-while [[ $1 =~ ^\- ]] do
+while [[ $1 =~ ^\- ]]; do
   if [[ $1 == "-n" ]]; then
     number_output=true
   elif [[ $1 == "-y" ]]; then
@@ -296,7 +296,7 @@ case $OPT1 in
       echo -n "full path to Main-ROM : "
       read MAIN
     fi
-    if [[ ! -f $MAIN ]] then
+    if [[ ! -f "${MAIN}" ]]; then
       echo "File '$MAIN' does not exist"
       exit 13
     fi;;
@@ -309,7 +309,7 @@ case $OPT1 in
 esac
 
 # Sub-ROM
-if [[ ( $OPT1 == 1 || $OPT1 == 2 || $OPT1 == 4) && $OPT3 == 4 ]] then
+if [[ ( $OPT1 == 1 || $OPT1 == 2 || $OPT1 == 4) && $OPT3 == 4 ]]; then
   # must split into 2 parts
   SUB_PLUS_KANJI="${extra_roms}/Philips_MSX2+_NMS8250_8280_ROM_B-27C512.ROM"
   if [[ ! -f "${SUB_PLUS_KANJI}" ]]; then
@@ -339,7 +339,7 @@ else
         echo -n "full path to Sub-ROM : "
         read SUB
       fi
-      if [[ ! -f $SUB ]] then
+      if [[ ! -f "${SUB}" ]]; then
         echo "File '$SUB' does not exist"
         exit 14
       fi;;
