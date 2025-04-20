@@ -16,7 +16,10 @@ if [[ $# == 0 ]]; then
   echo " -n\toutput as OCM-BIOSiiiiii.DAT which each 'i' a choice value"
   echo " -s <digit>\toutput as ALT-BIOS.DAi"
   echo " -y\toverwrite existing file without asking"
-  echo " -e <path>\tpath to extra ROMs (FRS or Repair-Bas)"
+  echo " -e <path>\tpath to extra ROMs (ESE3, FRS or Repair-Bas)"
+  echo
+  echo "Filenames expected in extra ROM path when choosing MSX2 ESE3/OneChipMSX:"
+  echo "  MEGA-SD.ROM, MSX2BIOS.ROM, MSX2SUB.ROM, MSXMUSIC.ROM, KANJIFNT.ROM"
   exit 1
 fi
 
@@ -73,15 +76,8 @@ OUTPUT="${SDBIOSFN}"
 # Option parameters
 ## 1: firmware
 shift && case $1 in
-  '.' ) OPT1=$DEFOPT1;;
-  1   ) OPT1=$1;;
-  2   ) OPT1=$1;;
-  3   ) OPT1=$1;;
-  4   ) OPT1=$1;;
-  5   ) OPT1=$1;;
-  6   ) OPT1=$1;;
-  7   ) OPT1=$1;;
-  8   ) OPT1=$1;;
+  '.') OPT1=$DEFOPT1;;
+  1|2|3|4|5|6|7|8|9) OPT1=$1;;
   *) ;;
 esac
 ## 2: Disk-ROM
@@ -90,6 +86,7 @@ shift && case $1 in
   1   ) OPT2=$1;;
   2   ) OPT2=$1;;
   3   ) OPT2=$1; [[ $OPT1 == 1 ]] && OPT2=;;
+  4   ) OPT2=$1; [[ $OPT1 != 9 ]] && OPT2=;;
   *) ;;
 esac
 ## 3: Main-ROM / keyboard mapping
@@ -151,7 +148,7 @@ if [[ -z "$OPT1" ]]; then
     --title "Firmware Menu" \
     --default-item '2' \
     --menu "Please select firmware" \
-    15 70 8 \
+    20 80 9 \
     1 "${FIRM1}" \
     2 "${FIRM2}  (default)" \
     3 "${FIRM3}  (experimental)" \
@@ -160,6 +157,7 @@ if [[ -z "$OPT1" ]]; then
     6 "MSX2 OCM-PLD v3.9.x" \
     7 "Custom MainROM & SubROM" \
     8 "C-BIOS v0.29a MSX2+ (requires OCM-PLD v3.9.1 or newer)" \
+    9 "MSX2 ESE3/OneChipMSX" \
     2>&1 >/dev/tty)
 fi
 if [[ $OPT1 == 4 ]]; then
@@ -184,6 +182,10 @@ if [[ $OPT1 != 1 ]]; then
   # sha1 15f7d295d574124dec7073b7d54bff76aeb243d5
   # Comparable to MegaFlashROM SCC+ SD; DiskROM related code removed
   opts+=("Nextor Kernel v2.1.2")
+fi
+if [[ $OPT1 == 9 ]]; then
+  opts+=(4)
+  opts+=("ESE3 MegaSD")
 fi
 if [[ $OPT1 == 5 ]]; then
   # MSX1 only supports Nextor; not MegaSDHC
@@ -211,6 +213,7 @@ else
     1) DISK=("${ROMDIR}/megasd1s.rom" "${NULL64}");;
     2) DISK=("${ROMDIR}/megasd2s.rom" "${NULL64}");;
     3) DISK=("${ROMDIR}/nextsd1s.rom");;
+    4) DISK=("${extra_roms}/MEGA-SD.ROM" "${NULL64}");;
     *);;
   esac
 fi
@@ -243,12 +246,12 @@ case $OPT1 in
       4 "MSX2 FRS-v2.2 EU" \
       5 "MSX2 FRS-v2.2 JP" \
     );;
-  7|8);; # no choice
+  7|8|9);; # no choice
   *)
     echo "unhandled situation"
     exit 15;;
 esac
-if [[ -z "$OPT3" && $OPT1 != 7 && $OPT1 != 8 ]]; then
+if [[ -z "$OPT3" && $OPT1 != 7 && $OPT1 != 8 && $OPT1 != 9 ]]; then
   OPT3=$(dialog \
     --title "Main-ROM Menu" \
     --default-item '2' \
@@ -303,6 +306,7 @@ case $OPT1 in
   # could add choice for regular/JP/BR/EU C-BIOS MainROM - now always regular
   # we don't use cbios_basic.rom nor cbios_logo*.rom
   8) MAIN="${CBIOS_PATH}/cbios_main_msx2+.rom";;
+  9) MAIN="${extra_roms}/MSX2BIOS.ROM";;
   *)
     echo "unhandled situation"
     exit 16;;
@@ -344,6 +348,7 @@ else
         exit 14
       fi;;
     8) SUB="${CBIOS_PATH}/cbios_sub.rom";;
+    9) SUB="${extra_roms}/MSX2SUB.ROM";;
     *) SUB="${ROMDIR}/2pextrtc.rom";;
   esac
 fi
@@ -353,6 +358,7 @@ case $OPT1 in
   3) MUSIC="${ROMDIR}/msxtrmus.rom";;
   # C-BIOS expects MSX-MUSIC at slot 3-1 and nothing in 0-2 - leave this block empty
   8) MUSIC="${ROMDIR}/free16kb.rom";;
+  9) MUSIC="${extra_roms}/MSXMUSIC.ROM";;
   *) MUSIC="${ROMDIR}/msx2pmus.rom";;
 esac
 
@@ -362,6 +368,7 @@ case $OPT1 in
      KANJI="${ROMDIR}/kn2plfix.rom";;
   # C-BIOS expects logo at unexpanded slot 0, in page 2. OCM-PLD does not support that. C-BIOS will boot without logo.
   8) KANJI="${CBIOS_PATH}/cbios_music_plus_free16kb.rom";; # C-BIOS expects MSX-MUSIC rom at slot 3-1 page 1 - which is where OCM-PLD puts the first half of Kanji ROM
+  9) KANJI="${ROMDIR}/knnologo.rom";; # ESE3 MSX2 - will be ignored
   *)
     opts=(
       0 "No logo" \
@@ -424,7 +431,7 @@ case $OPT1 in
   # older firmware
   1) OPT5=$DEFOPT5;;
   # MSX1/2/2+
-  2|5|6|7|8) opts=(
+  2|5|6|7|8|9) opts=(
        1 "No Option-ROM  (default)"
        2 "ESP8266 Wi-Fi BIOS ${ESPVER}"
      )
@@ -471,7 +478,10 @@ case $OPT1 in
 esac
 
 # JIS1-ROM
-JIS1="${ROMDIR}/a1xxjis1.rom"
+case $OPT1 in
+  9) JIS1="${extra_roms}/KANJIFNT.ROM";;
+  *) JIS1="${ROMDIR}/a1xxjis1.rom";;
+esac
 
 # JIS2-ROM
 JIS2="${ROMDIR}/a1xxjis2.rom"
