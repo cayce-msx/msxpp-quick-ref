@@ -4,7 +4,8 @@ set -e
 
 if [[ $# == 0 ]]; then
   echo "Create SD-BIOS (OCM-BIOS.DAT) for use with OCM-PLD."
-  echo "Based on make-sdb.cmd for OCM-SDBIOS v3.7 by KdL (2024.01.13)."
+  echo "Based on make-sdb.cmd for OCM-SDBIOS v3.8 by KdL (2025.06.29), with a few additions."
+  echo "Left out Logo toolkit & kncustom.rom+msxppopt.rom; runs only on Windows."
   echo "Named 'make-sdbios.sh' because, well, make-sdb.sh could make Linux folks uneasy about their internal drive ;)"
   echo "Menu selections are less feature rich. Cancels exits."
   echo
@@ -61,6 +62,7 @@ fi
 # Variables
 ROMDIR="${SDBIOS}/roms"
 FREE16="${ROMDIR}/free16kb.rom"
+NULL48="${ROMDIR}/null48kb.rom" # actually all $ff!
 NULL64="${ROMDIR}/null64kb.rom"
 TMPDIR=$(mktemp -d)
 CBIOS_PATH="$(dirname $0)/../roms"
@@ -77,7 +79,7 @@ OUTPUT="${SDBIOSFN}"
 ## 1: firmware
 shift && case $1 in
   '.') OPT1=$DEFOPT1;;
-  1|2|3|4|5|6|7|8|9) OPT1=$1;;
+  1|2|3|4|5|6|7|8|9|10) OPT1=$1;;
   *) ;;
 esac
 ## 2: Disk-ROM
@@ -86,7 +88,7 @@ shift && case $1 in
   1   ) OPT2=$1;;
   2   ) OPT2=$1;;
   3   ) OPT2=$1; [[ $OPT1 == 1 ]] && OPT2=;;
-  4   ) OPT2=$1; [[ $OPT1 != 9 ]] && OPT2=;;
+  4   ) OPT2=$1; [[ $OPT1 != 10 ]] && OPT2=;;
   *) ;;
 esac
 ## 3: Main-ROM / keyboard mapping
@@ -122,6 +124,8 @@ shift && case $1 in
   'H' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   'I' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   'J' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'K' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
+  'L' ) OPT4=$1; [[ $OPT1 == 3 ]] && OPT4=;;
   *) ;;
 esac
 ## 5: Option-ROM / Wi-Fi
@@ -148,7 +152,7 @@ if [[ -z "$OPT1" ]]; then
     --title "Firmware Menu" \
     --default-item '2' \
     --menu "Please select firmware" \
-    20 80 9 \
+    20 100 10 \
     1 "${FIRM1}" \
     2 "${FIRM2}  (default)" \
     3 "${FIRM3}  (experimental)" \
@@ -156,8 +160,9 @@ if [[ -z "$OPT1" ]]; then
     5 "MSX1 OCM-PLD v3.9.x" \
     6 "MSX2 OCM-PLD v3.9.x" \
     7 "Custom MainROM & SubROM" \
-    8 "C-BIOS v0.29a MSX2+ (requires OCM-PLD v3.9.1 or newer)" \
-    9 "MSX2 ESE3/OneChipMSX" \
+    8 "C-BIOS v0.29a MSX2+ (OCM-PLD >=v3.9.1) (with MegaSD/Nextor, Wi-Fi optional, no logo)" \
+    9 "C-BIOS v0.29b KdL (no mass storage, no Wi-Fi, with logo)" \
+    10 "MSX2 ESE3/OneChipMSX" \
     2>&1 >/dev/tty)
 fi
 if [[ $OPT1 == 4 ]]; then
@@ -170,52 +175,57 @@ if [[ $OPT1 == 4 ]]; then
 fi
 
 # 2: Disk-ROM
-opts=(
-  1 "MegaSDHC FAT16X Single drive  (default)" \
-  2 "MegaSDHC FAT16X Double drive  (drive A: and B:)" \
-)
-if [[ $OPT1 != 1 ]]; then
-  opts+=(3)
-  # https://github.com/Konamiman/Nextor/releases/tag/v2.1.2
-  # Dec 1, 2023
-  # Nextor-2.1.2.OCM.ROM
-  # sha1 15f7d295d574124dec7073b7d54bff76aeb243d5
-  # Comparable to MegaFlashROM SCC+ SD; DiskROM related code removed
-  opts+=("Nextor Kernel v2.1.2")
-fi
-if [[ $OPT1 == 9 ]]; then
-  opts+=(4)
-  opts+=("ESE3 MegaSD")
-fi
-if [[ $OPT1 == 5 ]]; then
-  # MSX1 only supports Nextor; not MegaSDHC
-  OPT2=3
-fi
-if [[ -z "$OPT2" ]]; then
-  OPT2=$(dialog \
-    --title "Disk-ROM Menu" \
-    --default-item '1' \
-    --menu "Please select Disk-ROM" \
-    15 60 4 \
-    "${opts[@]}" \
-    2>&1 >/dev/tty)
-fi
+if [[ $OPT1 != 9 ]]; then
+  opts=(
+    1 "MegaSDHC FAT16X Single drive  (default)" \
+    2 "MegaSDHC FAT16X Double drive  (drive A: and B:)" \
+  )
+  if [[ $OPT1 != 1 ]]; then
+    opts+=(3)
+    # https://github.com/Konamiman/Nextor/releases/tag/v2.1.3
+    # Jun 2, 2025
+    # Nextor-2.1.3.OCM.ROM
+    # sha256 879b615cd43b2a10b7f7daab230424abb98c14e332dd1c9bf872eb7396100f64
+    # Comparable to MegaFlashROM SCC+ SD; DiskROM related code removed
+    opts+=("Nextor Kernel v2.1.3")
+  fi
+  if [[ $OPT1 == 10 ]]; then
+    opts+=(4)
+    opts+=("ESE3 MegaSD")
+  fi
+  if [[ $OPT1 == 5 ]]; then
+    # MSX1 only supports Nextor; not MegaSDHC
+    OPT2=3
+  fi
+  if [[ -z "$OPT2" ]]; then
+    OPT2=$(dialog \
+      --title "Disk-ROM Menu" \
+      --default-item '1' \
+      --menu "Please select Disk-ROM" \
+      15 60 4 \
+      "${opts[@]}" \
+      2>&1 >/dev/tty)
+  fi
 
-if [[ $OPT1 == 1 ]]; then
-  # older firmware: no Nextor, and no NULL rom
-  case $OPT2 in
-    1) DISK=("${ROMDIR}/megasd1s.rom");;
-    2) DISK=("${ROMDIR}/megasd2s.rom");;
-    *);;
-  esac
-else
-  case $OPT2 in
-    1) DISK=("${ROMDIR}/megasd1s.rom" "${NULL64}");;
-    2) DISK=("${ROMDIR}/megasd2s.rom" "${NULL64}");;
-    3) DISK=("${ROMDIR}/nextsd1s.rom");;
-    4) DISK=("${extra_roms}/MEGA-SD.ROM" "${NULL64}");;
-    *);;
-  esac
+  if [[ $OPT1 == 1 ]]; then
+    # older firmware: no Nextor, and no NULL rom
+    case $OPT2 in
+      1) DISK=("${ROMDIR}/megasd1s.rom");;
+      2) DISK=("${ROMDIR}/megasd2s.rom");;
+      *);;
+    esac
+  else
+    case $OPT2 in
+      1) DISK=("${ROMDIR}/megasd1s.rom" "${NULL64}");;
+      2) DISK=("${ROMDIR}/megasd2s.rom" "${NULL64}");;
+      3) DISK=("${ROMDIR}/nextsd1s.rom");;
+      4) DISK=("${extra_roms}/MEGA-SD.ROM" "${NULL64}");;
+      *);;
+    esac
+  fi
+else # $OPT1 == 9: C-BIOS KdL mapping
+  # 128k storage is replaced by 16k MSX-MUSIC ROM (padded to 128k) in slot 3-2
+  DISK=("${ROMDIR}/cbiosmus.rom" "${NULL48}" "${NULL64}")
 fi
 
 # 3: Main-ROM
@@ -246,12 +256,12 @@ case $OPT1 in
       4 "MSX2 FRS-v2.2 EU" \
       5 "MSX2 FRS-v2.2 JP" \
     );;
-  7|8|9);; # no choice
+  7|8|9|10);; # no choice
   *)
     echo "unhandled situation"
     exit 15;;
 esac
-if [[ -z "$OPT3" && $OPT1 != 7 && $OPT1 != 8 && $OPT1 != 9 ]]; then
+if [[ -z "$OPT3" && $OPT1 != 7 && $OPT1 != 8 && $OPT1 != 9 && $OPT1 != 10 ]]; then
   OPT3=$(dialog \
     --title "Main-ROM Menu" \
     --default-item '2' \
@@ -306,7 +316,8 @@ case $OPT1 in
   # could add choice for regular/JP/BR/EU C-BIOS MainROM - now always regular
   # we don't use cbios_basic.rom nor cbios_logo*.rom
   8) MAIN="${CBIOS_PATH}/cbios_main_msx2+.rom";;
-  9) MAIN="${extra_roms}/MSX2BIOS.ROM";;
+  9) MAIN="${ROMDIR}/cbiosyen.rom";;
+  10) MAIN="${extra_roms}/MSX2BIOS.ROM";;
   *)
     echo "unhandled situation"
     exit 16;;
@@ -348,7 +359,8 @@ else
         exit 14
       fi;;
     8) SUB="${CBIOS_PATH}/cbios_sub.rom";;
-    9) SUB="${extra_roms}/MSX2SUB.ROM";;
+    9) SUB="${ROMDIR}/cbiossub.rom";;
+    10) SUB="${extra_roms}/MSX2SUB.ROM";;
     *) SUB="${ROMDIR}/2pextrtc.rom";;
   esac
 fi
@@ -357,18 +369,19 @@ fi
 case $OPT1 in
   3) MUSIC="${ROMDIR}/msxtrmus.rom";;
   # C-BIOS expects MSX-MUSIC at slot 3-1 and nothing in 0-2 - leave this block empty
-  8) MUSIC="${ROMDIR}/free16kb.rom";;
-  9) MUSIC="${extra_roms}/MSXMUSIC.ROM";;
+  8|9) MUSIC="${ROMDIR}/free16kb.rom";;
+  10) MUSIC="${extra_roms}/MSXMUSIC.ROM";;
   *) MUSIC="${ROMDIR}/msx2pmus.rom";;
 esac
 
 # 4: Kanji-ROM
 case $OPT1 in
   3) # Turbo-R: no Kanji-ROM / logo choice
-     KANJI="${ROMDIR}/kn2plfix.rom";;
+     KANJI=("${ROMDIR}/kn2plfix.rom");;
   # C-BIOS expects logo at unexpanded slot 0, in page 2. OCM-PLD does not support that. C-BIOS will boot without logo.
-  8) KANJI="${CBIOS_PATH}/cbios_music_plus_free16kb.rom";; # C-BIOS expects MSX-MUSIC rom at slot 3-1 page 1 - which is where OCM-PLD puts the first half of Kanji ROM
-  9) KANJI="${ROMDIR}/knnologo.rom";; # ESE3 MSX2 - will be ignored
+  8) KANJI=("${CBIOS_PATH}/cbios_music_plus_free16kb.rom");; # C-BIOS expects MSX-MUSIC rom at slot 3-1 page 1 - which is where OCM-PLD puts the first half of Kanji ROM
+  9) KANJI=("${ROMDIR}/free16kb.rom" "${ROMDIR}/free16kb.rom");; # .. but MSX-MUSIC at slot 3-2 is also recognized (at the expense of mass storage). Kanji remains empty then.
+  10) KANJI=("${ROMDIR}/knnologo.rom");; # ESE3 MSX2 - will be ignored
   *)
     opts=(
       0 "No logo" \
@@ -384,44 +397,49 @@ case $OPT1 in
       A "SX-2 logo by 8bits4ever" \
       B "OCM generic unbound logo" \
       C "u2-SX logo by Denjhang" \
-      D "extra: 2000" \
-      E "extra: 8bits4ever" \
-      F "extra: MiSXer" \
-      G "extra: MSX3+" \
-      H "extra: MSX3" \
-      I "extra: SX-1 v1" \
-      J "MSX2+ Philips NMS8250/80 (RepairBas)" \
+      D "PANASONIC unofficial logo" \
+      E "SX-E logo by 8bits4ever" \
+      F "extra: 2000 (removed in SDBIOS Pack 3.8!)" \
+      G "extra: 8bits4ever (removed in SDBIOS Pack 3.8!)" \
+      H "extra: MiSXer (removed in SDBIOS Pack 3.8!)" \
+      I "extra: MSX3+ (removed in SDBIOS Pack 3.8!)" \
+      J "extra: MSX3 (removed in SDBIOS Pack 3.8!)" \
+      K "extra: SX-1 v1 (removed in SDBIOS Pack 3.8!)" \
+      L "MSX2+ Philips NMS8250/80 (RepairBas)" \
     )
     if [[ -z "$OPT4" ]]; then
       OPT4=$(dialog \
         --title "Kanji-ROM Menu" \
         --default-item '2' \
         --menu "Please select logo" \
-        20 60 18 \
+        22 60 18 \
         "${opts[@]}" \
         2>&1 >/dev/tty)
     fi
     case $OPT4 in
-      0) KANJI="${ROMDIR}/knnologo.rom";;
-      1) KANJI="${ROMDIR}/kn2plfix.rom";;
-      2) KANJI="${ROMDIR}/knmsxppl.rom";;
-      3) KANJI="${ROMDIR}/knsonyun.rom";;
-      4) KANJI="${ROMDIR}/knphilun.rom";;
-      5) KANJI="${ROMDIR}/knzneokr.rom";;
-      6) KANJI="${ROMDIR}/knzneobr.rom";;
-      7) KANJI="${ROMDIR}/knsx-1v2.rom";;
-      8) KANJI="${ROMDIR}/knsm-xbr.rom";;
-      9) KANJI="${ROMDIR}/knocmkai.rom";;
-      A) KANJI="${ROMDIR}/knsx-2v2.rom";;
-      B) KANJI="${ROMDIR}/knocmgun.rom";;
-      C) KANJI="${ROMDIR}/knu2sx11.rom";;
-      D) KANJI="${ROMDIR}/extra/kn2000un.rom";;
-      E) KANJI="${ROMDIR}/extra/kn8bi4ev.rom";;
-      F) KANJI="${ROMDIR}/extra/knmisxer.rom";;
-      G) KANJI="${ROMDIR}/extra/knmsx3pl.rom";;
-      H) KANJI="${ROMDIR}/extra/knmsx3un.rom";;
-      I) KANJI="${ROMDIR}/extra/knsx-1v1.rom";;
-      J) KANJI="${KANJI_BAS}";;
+      0) KANJI=("${ROMDIR}/knnologo.rom");;
+      1) KANJI=("${ROMDIR}/knmfixv2.rom");;
+      2) KANJI=("${ROMDIR}/knmsxppl.rom");;
+      3) KANJI=("${ROMDIR}/knsonyv2.rom");;
+      4) KANJI=("${ROMDIR}/knphilv2.rom");;
+      5) KANJI=("${ROMDIR}/knzneokr.rom");;
+      6) KANJI=("${ROMDIR}/knzneobr.rom");;
+      7) KANJI=("${ROMDIR}/knsx-1v4.rom");;
+      8) KANJI=("${ROMDIR}/knsm-xv2.rom");;
+      9) KANJI=("${ROMDIR}/knmkai15.rom");;
+      A) KANJI=("${ROMDIR}/knsx-2v4.rom");;
+      B) KANJI=("${ROMDIR}/knocmgv2.rom");;
+      C) KANJI=("${ROMDIR}/knu2sxv3.rom");;
+      D) KANJI=("${ROMDIR}/knpanav1.rom");;
+      E) KANJI=("${ROMDIR}/knsx-ev7.rom");;
+      # 'extra/' folder not in SDBIOS Pack 3.8!
+      F) KANJI=("${ROMDIR}/extra/kn2000un.rom");;
+      G) KANJI=("${ROMDIR}/extra/kn8bi4ev.rom");;
+      H) KANJI=("${ROMDIR}/extra/knmisxer.rom");;
+      I) KANJI=("${ROMDIR}/extra/knmsx3pl.rom");;
+      J) KANJI=("${ROMDIR}/extra/knmsx3un.rom");;
+      K) KANJI=("${ROMDIR}/extra/knsx-1v1.rom");;
+      L) KANJI=("${KANJI_BAS}");;
       *);;
     esac;;
 esac
@@ -430,8 +448,10 @@ esac
 case $OPT1 in
   # older firmware
   1) OPT5=$DEFOPT5;;
+  # KdL C-BIOS
+  9) OPTION="${ROMDIR}/cbiosopt.rom";; # C-BIOS logo
   # MSX1/2/2+
-  2|5|6|7|8|9) opts=(
+  2|5|6|7|8|10) opts=(
        1 "No Option-ROM  (default)"
        2 "ESP8266 Wi-Fi BIOS ${ESPVER}"
      )
@@ -479,7 +499,7 @@ esac
 
 # JIS1-ROM
 case $OPT1 in
-  9) JIS1="${extra_roms}/KANJIFNT.ROM";;
+  10) JIS1="${extra_roms}/KANJIFNT.ROM";;
   *) JIS1="${ROMDIR}/a1xxjis1.rom";;
 esac
 
@@ -573,7 +593,7 @@ fi
 case $OPT1 in
   1) # older firmware - different order, no option ROM and no JIS2 (384KiB SDBIOS)
     cat "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" > "${TMPDIR}/BLANK128.TMP"
-    cat "${DISK[@]}" "${MAIN}" "${SUB}" "${MUSIC}" "${JIS1}" "${FREE16}" "${KANJI}" "${FREE16}" "${FREE16}" "${EXTRA}" "${FREE16}" "${FREE16}" "${TMPDIR}/BLANK128.TMP" > "${OUTPUT}"
+    cat "${DISK[@]}" "${MAIN}" "${SUB}" "${MUSIC}" "${JIS1}" "${FREE16}" "${KANJI[@]}" "${FREE16}" "${FREE16}" "${EXTRA}" "${FREE16}" "${FREE16}" "${TMPDIR}/BLANK128.TMP" > "${OUTPUT}"
     ;;
   4) # blank
     cat "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" "${FREE16}" > "${TMPDIR}/BLANK128.TMP"
@@ -581,7 +601,7 @@ case $OPT1 in
     ;;
   *) # MSX1/2/2+/TR
     #echo "${DISK[@]}" "${MAIN}" "${EXTRA}" "${MUSIC}" "${SUB}" "${KANJI}" "${OPTION}" "${JIS1}" "${JIS2}"
-    cat "${DISK[@]}" "${MAIN}" "${EXTRA}" "${MUSIC}" "${SUB}" "${KANJI}" "${OPTION}" "${JIS1}" "${JIS2}" > "${OUTPUT}";;
+    cat "${DISK[@]}" "${MAIN}" "${EXTRA}" "${MUSIC}" "${SUB}" "${KANJI[@]}" "${OPTION}" "${JIS1}" "${JIS2}" > "${OUTPUT}";;
 esac
 
 if [[ -z $quiet ]]; then
@@ -589,15 +609,15 @@ if [[ -z $quiet ]]; then
   echo
 
   # Help Message
-  echo "---| MSX-BIOS Configuration (OCM-PLD v3.4 or later) |------------------------"
-  echo "3-2 (4000h)  128kB  MEGASDHC.ROM + NULL64KB.ROM / NEXTOR  .ROM   blocks 01-08"
-  echo "0-0 (0000h)   32kB  MSX2P   .ROM / MSXTR   .ROM                  blocks 09-10"
-  echo "3-3 (4000h)   16kB  XBASIC2 .ROM / XBASIC21.ROM                  block  11"
-  echo "0-2 (4000h)   16kB  MSX2PMUS.ROM / MSXTRMUS.ROM                  block  12"
-  echo "3-1 (0000h)   16kB  MSX2PEXT.ROM / MSXTREXT.ROM                  block  13"
-  echo "3-1 (4000h)   32kB  MSXKANJI.ROM                                 blocks 14-15"
-  echo "0-3 (4000h)   16kB  FREE16KB.ROM / MSXTROPT.ROM / ESP8266 .ROM   block  16"
-  echo "I/O          128kB  JIS1    .ROM                                 blocks 17-24"
-  echo "I/O          128kB  JIS2    .ROM                        (512kB)  blocks 25-32"
-  echo "-----------------------------------------------------------------------------"
+  echo "---| MSX-BIOS Configuration (OCM-PLD v3.4 or later) |---------------------------------------"
+  echo "3-2 (4000h)  128kB  MEGASDHC.ROM + NULL64KB.ROM / NEXTOR  .ROM                  blocks 01-08" # KdL C-BIOS: CBIOSMUS+NULL48KB+NULL64KB
+  echo "0-0 (0000h)   32kB  MSX2P   .ROM / MSXTR   .ROM                / cbios_main     blocks 09-10" # KdL C-BIOS: CBIOSYEN
+  echo "3-3 (4000h)   16kB  XBASIC2 .ROM / XBASIC21.ROM / FREE16KB.ROM                  block  11"    # KdL C-BIOS: FREE16KB
+  echo "0-2 (4000h)   16kB  MSX2PMUS.ROM / MSXTRMUS.ROM                / FREE16KB.ROM   block  12"
+  echo "3-1 (0000h)   16kB  MSX2PEXT.ROM / MSXTREXT.ROM                / cbios_sub      block  13"
+  echo "3-1 (4000h)   32kB  MSXKANJI.ROM                               / cbios_music    blocks 14-15" # KdL C-BIOS: FREE16KB * 2
+  echo "0-3 (4000h)   16kB  FREE16KB.ROM / MSXTROPT.ROM / ESP8266 .ROM / CBIOSOPT .ROM  block  16"    # KdL C-BIOS: CBIOSOPT (logo)
+  echo "I/O          128kB  JIS1    .ROM                                                blocks 17-24"
+  echo "I/O          128kB  JIS2    .ROM                                       (512kB)  blocks 25-32"
+  echo "--------------------------------------------------------------------------------------------"
 fi
