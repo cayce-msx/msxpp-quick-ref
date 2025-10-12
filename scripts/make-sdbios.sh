@@ -19,8 +19,15 @@ if [[ $# == 0 ]]; then
   echo " -y\toverwrite existing file without asking"
   echo " -e <path>\tpath to extra ROMs (ESE3, FRS or Repair-Bas)"
   echo
-  echo "Filenames expected in extra ROM path when choosing MSX2 ESE3/OneChipMSX:"
+  echo "Filenames expected in extra ROM path when choosing firmware MSX2 ESE3/OneChipMSX:"
   echo "  MEGA-SD.ROM, MSX2BIOS.ROM, MSX2SUB.ROM, MSXMUSIC.ROM, KANJIFNT.ROM"
+  echo
+  echo "Filenames expected in extra ROM path when choosing firmware MSX2+ with MainROM Philips NMS8250/80 (RepairBas):"
+  echo "  Philips_MSX2+_NMS8250_8280_ROM_A-27C256.ROM, Philips_MSX2+_NMS8250_8280_ROM_B-27C512.ROM"
+  echo
+  echo "Filenames expected in extra ROM path when choosing firmware MSX2 with Mainrom FRS-v2.2:"
+  echo "  EU: MSX2EU_mainbios-basic.rom, MSX2EU_subROM.rom"
+  echo "  JP: MSX2JP_mainbios-basic.rom, MSX2JP_subROM.rom"
   exit 1
 fi
 
@@ -377,7 +384,7 @@ esac
 # 4: Kanji-ROM
 case $OPT1 in
   3) # Turbo-R: no Kanji-ROM / logo choice
-     KANJI=("${ROMDIR}/kn2plfix.rom");;
+     KANJI=("${ROMDIR}/knmfixv2.rom");;
   # C-BIOS expects logo at unexpanded slot 0, in page 2. OCM-PLD does not support that. C-BIOS will boot without logo.
   8) KANJI=("${CBIOS_PATH}/cbios_music_plus_free16kb.rom");; # C-BIOS expects MSX-MUSIC rom at slot 3-1 page 1 - which is where OCM-PLD puts the first half of Kanji ROM
   9) KANJI=("${ROMDIR}/free16kb.rom" "${ROMDIR}/free16kb.rom");; # .. but MSX-MUSIC at slot 3-2 is also recognized (at the expense of mass storage). Kanji remains empty then.
